@@ -13,12 +13,12 @@ Breif description:
 - Some other AWS-specific preparatios are also assumed (security groups, zones etc) 
 
 Pipeline steps sofar:
-(i) creates an EFS that will be used for shared data storage between different EC2 instances
-(ii) mounts it to the "head-node" EC2 
-(iii) copies source data from remorte NAS to EFS
-(iv) launches a separate "compute-node" EC2 instances for each sample (for the embarassingly parallel steps)
-(v) mounts EFS to each of the "compute-node" EC2 instances
-(vi) performs QC and trimming of fasq files, runs alignment (BWA-mem + postalt, b38), does some BAM-files QC and processing (Picard metrics, sorting, removing PCR duplicates etc)
+- creates an EFS that will be used for shared data storage between different EC2 instances
+- mounts it to the "head-node" EC2 
+- copies source data from remorte NAS to EFS
+- launches a separate "compute-node" EC2 instances for each sample (for the embarassingly parallel steps)
+- mounts EFS to each of the "compute-node" EC2 instances
+- performs QC and trimming of fasq files, runs alignment (BWA-mem + postalt, b38), does some BAM-files QC and processing (Picard metrics, sorting, removing PCR duplicates etc)
 
 This repository is intended for the author's pesonal use. 
 Version 03.17
