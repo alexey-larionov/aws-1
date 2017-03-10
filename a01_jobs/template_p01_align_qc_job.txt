@@ -1,0 +1,158 @@
+Job description for alignment and qc, aws wes pipeline
+Started: Alexey Larionov, 19Dec2016
+Last updated: Alexey Larionov, 26Feb2017
+
+# ----------------------------------------------------------------- #
+#                         Info to log file                          #
+# ----------------------------------------------------------------- #
+# Put * in front of the info line(s)
+
+*aws wes pipeline
+
+# ----------------------------------------------------------------- #
+#                       e-mail notifications                        #
+# ----------------------------------------------------------------- #
+
+email: alexey_larionov@hotmail.com
+# enter a valid e-mail address for the pipeline progress info
+# most of pipeline failures are not yet reported by e-mail
+# validity of e-mail will not be checked
+
+# ----------------------------------------------------------------- #
+#                          Project settings                         #
+# ----------------------------------------------------------------- #
+
+project: project1
+library: library1
+lane: lane1
+samples: samples_1.txt # the file MUST exist in source fastq folder 
+
+fastq_suffix: fastq.gz
+
+data_type: pe
+# allowed values: pe (se is not yet supported)
+
+platform: ILLUMINA
+# other platforms are not expected 
+
+platform_unit_for_rg: from_illumina_fastq
+# allowed values: from_illumina_fastq or project_library_lane
+
+remove_raw_fastq: no
+# allowed values: yes, no
+
+remove_trimmed_fastq: no
+# allowed values: yes, no
+
+# ----------------------------------------------------------------- #
+#                        nas files and folders                      #
+# ----------------------------------------------------------------- #
+
+nas: admin@mgqnap2.medschl.cam.ac.uk
+src_nas_folder: /share/alexey/aws/source_data/160630_alarionov
+tgt_nas_folder: /share/alexey/aws
+
+# ----------------------------------------------------------------- #
+#                              aws settings                         #
+# ----------------------------------------------------------------- #
+
+# token for efs creation
+efs_token: wes_efs # Currently it's fixed; in future a new token will be used for each new task 
+
+# Region and subnet 
+# Currently fixed, account specific (see subnet, see VPC -> Subnets)
+region: eu-west-1
+availability_zone: eu-west-1b
+subnet_id: subnet-1cdf5044
+
+# Security groups
+# Currently use pre-configured security groups; 
+# in future a set of security groups may be created for each new task.
+mt_security_group_id: sg-f276e894
+ec2_security_group_id: sg-2ef16548
+
+# Key(s)
+# Currently it is fixed
+# In future personal keys support and keys rotation may be added
+key_name: k01_01Dec2016
+key_file: /home/ec2-user/.ssh/k01_01Dec2016.pem
+
+# ami(s)
+ami_id: to-be-fixed-later 
+# Currently updated automatically to the AMI that has been launched
+# In future will be fixed to a stable working image
+
+# Instance(s) type
+align_qc_instance_type: m4.xlarge 
+# To be changed to appropriate image later
+# Possible instances: t2.micro m4.xlarge 
+
+# ----------------------------------------------------------------- #
+#                          Files and folders                        #
+# ----------------------------------------------------------------- #
+
+# Scripts folder and start script
+scripts_folder: scripts/p01_align_and_qc
+start_script: a00_start_pipeline.sh
+
+# base folders
+ec2_base_folder: /home/ec2-user
+efs_base_folder: efs
+
+# logs
+logs_folder: f01_logs
+
+# fastq
+raw_fastq_folder: f02_fastq/raw_fastq
+trimmed_fastq_folder: f02_fastq/trimmed_fastq
+
+# fastqc
+raw_fastqc_folder: f03_fastqc/raw_fastqc
+trimmed_fastqc_folder: f03_fastqc/trimmed_fastqc
+
+# bam
+bam_folder: f03_bam
+hla_folder: f03_bam/hla
+
+# bam stats
+flagstat_folder: f04_bam_stats/f01_flagstat
+picard_mkdup_folder: f04_bam_stats/f02_picard/f01_mkdup_metrics
+picard_inserts_folder: f04_bam_stats/f02_picard/f02_inserts_metrics
+picard_alignment_folder: f04_bam_stats/f02_picard/f03_alignment_metrics
+picard_hybridisation_folder: f04_bam_stats/f02_picard/f04_hybridisation_metrics
+picard_summary_folder: f04_bam_stats/f02_picard/f05_metrics_summaries
+qualimap_results_folder: f04_bam_stats/f03_qualimap
+samstat_results_folder: f04_bam_stats/f04_samstat
+
+# ----------------------------------------------------------------- #
+#                         Tools and resources                       #
+# ----------------------------------------------------------------- #
+
+#java: java
+#cutadapt: cutadapt
+#R: R
+#R-folder: /usr/bin
+
+tools_folder: tools
+fastqc: fastqc/fastqc_v0.11.5/fastqc
+
+cutadapt_min_len: 50
+cutadapt_trim_qual: 20
+cutadapt_remove_adapters: no # allowed values: yes, no
+cutadapt_adapter_1: CTGTCTCTTATACACATCTCCGAGCCCACGAGACNNNNNNNNATCTCGTATGCCGTCTTCTGCTTG
+cutadapt_adapter_2: CTGTCTCTTATACACATCTGACGCTGCCGACGANNNNNNNNGTGTAGATCTCGGTGGTCGCCGTATCATT
+#Illumina NextEra RapidCapture adaptors are given as example 
+
+bwa: bwa/bwa-0.7.15/bwa
+bwa_index: bwa/bwa_GRCh38/hs38DH.fa
+bwakit_k8: bwa/bwakit-0.7.15/k8
+bwakit_postalt_js: bwa/bwakit-0.7.15/bwa-postalt.js
+bwakit_run_hla: bwa/bwakit-0.7.15/run-HLA
+
+ref_genome: bwa/bwa_GRCh38/hs38DH.fa
+
+samtools: samtools/samtools-1.3.1/bin/samtools
+samtools_folder: samtools/samtools-1.3.1/bin
+
+picard: picard/picard-2.9.0/picard.jar
+htsjdk: htsjdk/htsjdk-2.9.1/htsjdk-unspecified-SNAPSHOT-all.jar

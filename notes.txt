@@ -1,0 +1,24 @@
+Assuming
+- demultiplexed fastq files (one sample per file) 
+
+Note for fastq_suffix:
+For file.fastq.gz the dot before "fastq.gz" is not included
+
+# Notes for platform_unit_for_rg: 
+# Platform_unit field in rg is not used for analysis in the pipeline. 
+# It is set only for SAM compliance with Picard/GATK expectations.
+# Option "from_illumina_fastq" instructs the script to unzip fastq1 file and 
+# to read "instrument_run_flowcell_lane" data from the 1st line of the file.  
+# This assumes that the fastq files were NOT merged from multiple lanes.  
+# Also this assumes that fastq files are zipped and are compliant with illumina
+# fastq headers as described below (link accessed 20Feb2017)
+# https://help.basespace.illumina.com/articles/descriptive/fastq-files
+# (this is likely to be true for any illumina fastq file)
+# Use "project_library_lane" option if any of these assumptions are wrong. 
+
+
+TODO for job description file: 
+- Convert to JSON?
+- Set efs mount points in all subnets (for allowing auto-allocation of ec2)
+- Allow automatic allocation of ec2 instances to availability_zone
+- see more comments in AWS settings section 
