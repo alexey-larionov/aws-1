@@ -2,14 +2,14 @@
 
 # s02_align_and_qc.sh
 # Started: Alexey Larionov, Nov2016
-# Last updated: Alexey Larionov, 25Feb2017
+# Last updated: Alexey Larionov, 15Mar2017
 
 # Tasks:
 # - run alignment and qc pipeline for one sample
 # - check whether all samples completed 
-# - start summrise and save script on a new ec2 instance 
+# - start summrise and save script on the head ec2 instance 
 #   when all samples are completed  
-# -Stop this ec2 instance at the end
+# - terminate the compute ec2 instance at the end
 
 # -------------------- Start-up and config --------------------- #
 

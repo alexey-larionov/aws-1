@@ -3,7 +3,7 @@
 # s02_align_and_qc_pe.sh
 # Wes sample alignment and QC
 # Started: Alexey Larionov, 12Dec2016
-# Last updated: Alexey Larionov, 26Feb2017
+# Last updated: Alexey Larionov, 15Mar2017
 
 # Stop at any errors
 set -e
@@ -67,8 +67,8 @@ echo "Started trimming fastq files"
 
 #${file_name%${sf}}_trimmed${sf}
 # File names
-trimmed_fastq_1="${trimmed_fastq_folder}/${fastq_1%${fastq_suffix}}_trim.${fastq_suffix}"
-trimmed_fastq_2="${trimmed_fastq_folder}/${fastq_2%${fastq_suffix}}_trim.${fastq_suffix}"
+trimmed_fastq_1="${trimmed_fastq_folder}/${fastq_1%.${fastq_suffix}}_trim.${fastq_suffix}"
+trimmed_fastq_2="${trimmed_fastq_folder}/${fastq_2%.${fastq_suffix}}_trim.${fastq_suffix}"
 trimming_log="${trimmed_fastq_folder}/${sample}_trimming.log"
 
 # Submit sample to cutadapt
@@ -78,7 +78,7 @@ then
   # Trim low-quality bases on both ends and remove adapters, 
   # then discard reads, if they are becoming too short;
   # Keep both fastq files cyncronised
-  cutadapt \
+  "${cutadapt}" \
     -q "${cutadapt_trim_qual}","${cutadapt_trim_qual}" \
     -m "${cutadapt_min_len}" \
     -a "${cutadapt_adapter_1}" \
@@ -92,7 +92,7 @@ then
 
   # Trim low-quality bases on both ends, then discard reads, 
   # if they are becoming too short; keep both fastq files cyncronised
-  cutadapt \
+  "${cutadapt}" \
     -q "${cutadapt_trim_qual}","${cutadapt_trim_qual}" \
     -m "${cutadapt_min_len}" \
     -o "${trimmed_fastq_1}" \
@@ -141,15 +141,19 @@ sm="${sample}"
 lb="${project}_${library}"
 pl="${platform}"
 
+# Platform Unit
 if [ "${platform_unit_for_rg}" == "from_illumina_fastq" ] 
 then 
-  # Assuming zipped illumina fastq files, and no fastq files merged from dofferent lanes
+     
+  # Read @<instrument>:<run number>:<flowcell ID>:<lane> from the 1st line of the 1st fastq
+  # Assuming zipped illumina fastq files, and no fastq files merged from different lanes
   pu=$(gunzip -c "${trimmed_fastq_1}" | head -n 1 | sed s/^@// | awk 'BEGIN{FS=":"} {print $1"_"$2"_"$3"_"$4}') 
+  
 fi
 
 if [ "${platform_unit_for_rg}" == "project_library_lane" ] 
 then
-  # Use a generic line description
+  # Use a generic line description as a Platform Unit
   pu="${project}_${library}_${lane}"
 fi
 
@@ -164,7 +168,7 @@ echo "PU (${platform_unit_for_rg}): ${pu}"
 echo ""
 
 # ------- Alignment ------- #
-# Loading index to RAM on ec2 may take ~30 min ...
+# Loading bwa index to RAM on ec2 may take ~30 min ...
 # e.g. as noted here: https://www.biostars.org/p/142920/
 
 # Progress report
@@ -182,7 +186,7 @@ hla="${hla_folder}/${sample}_${lane}_hla"
 # Align (todo: check if adding -M is still necessary?) |
 # Postprocess alternate loci and prepare data for HLA typing | 
 # SAM -> BAM 
-"${bwa}" mem -M -t4 -R"${rg}" "${bwa_index}" "${trimmed_fastq_1}" "${trimmed_fastq_2}" 2> "${alignment_log}" | \
+"${bwa}" mem -M -t"${threads_bwa}" -R"${rg}" "${bwa_index}" "${trimmed_fastq_1}" "${trimmed_fastq_2}" 2> "${alignment_log}" | \
 "${bwakit_k8}" "${bwakit_postalt_js}" -p "${hla}" "${bwa_index}.alt" | \
 "${samtools}" view -1 - > "${raw_bam}"
 
@@ -307,7 +311,7 @@ binfix_bam="${sample}_${lane}_fixmate_sort_binfix.bam"
 binfix_bam="${bam_folder}/${binfix_bam}"
 
 # Fix Bin field errors
-java -Xmx8g -cp "${htsjdk}" htsjdk.samtools.FixBAMFile \
+java -Xmx"${java_xmx}" -cp "${htsjdk}" htsjdk.samtools.FixBAMFile \
   "${sort_bam}" \
   "${binfix_bam}"
 
@@ -333,7 +337,7 @@ clean_bam="${sample}_${lane}_fixmate_sort_binfix_clean.bam"
 clean_bam="${bam_folder}/${clean_bam}"
 
 # Clean bam
-java -Xmx8g -jar "${picard}" CleanSam \
+java -Xmx"${java_xmx}" -jar "${picard}" CleanSam \
   INPUT="${binfix_bam}" \
   OUTPUT="${clean_bam}" \
  	VERBOSITY=ERROR \
@@ -355,7 +359,7 @@ echo ""
 echo "Started bam validation"
 
 # Validate bam
-java -Xmx8g -jar "${picard}" ValidateSamFile \
+java -Xmx"${java_xmx}" -jar "${picard}" ValidateSamFile \
   INPUT="${clean_bam}" \
   VERBOSITY=ERROR \
   QUIET=true \
@@ -386,7 +390,7 @@ mkdup_stats_file="${sample}_mkdup.txt"
 mkdup_stats="${picard_mkdup_folder}/${mkdup_stats_file}"
 
 # Process sample
-java -Xmx8g -jar "${picard}" MarkDuplicates \
+java -Xmx"${java_xmx}" -jar "${picard}" MarkDuplicates \
   INPUT="${clean_bam}" \
   OUTPUT="${mkdup_bam}" \
   METRICS_FILE="${mkdup_stats}" \
@@ -438,12 +442,12 @@ inserts_stats="${picard_inserts_folder}/${sample}_insert_sizes.txt"
 inserts_plot="${picard_inserts_folder}/${sample}_insert_sizes.pdf"
 
 # Process sample
-java -Xmx8g -jar "${picard}" CollectInsertSizeMetrics \
+java -Xmx"${java_xmx}" -jar "${picard}" CollectInsertSizeMetrics \
   INPUT="${mkdup_bam}" \
   OUTPUT="${inserts_stats}" \
   HISTOGRAM_FILE="${inserts_plot}" \
   VERBOSITY=ERROR \
-  QUIET=true 
+  QUIET=true #2> "${CollectInsertSizeMetrics.log}" ?
 
 # Progress report (if run sequential)
 echo "Completed collecting inserts size metrics: $(date +%d%b%Y_%H:%M:%S)"
@@ -459,27 +463,16 @@ echo "Started collecting alignment summary metrics"
 alignment_metrics="${picard_alignment_folder}/${sample}_as_metrics.txt"
 
 # Process sample (using default adapters list)
-java -Xmx8g -jar "${picard}" CollectAlignmentSummaryMetrics \
+java -Xmx"${java_xmx}" -jar "${picard}" CollectAlignmentSummaryMetrics \
   INPUT="${mkdup_bam}" \
   OUTPUT="${alignment_metrics}" \
   REFERENCE_SEQUENCE="${ref_genome}" \
   VERBOSITY=ERROR \
-  QUIET=true
+  QUIET=true #2> "${CollectAlignmentSummaryMetrics.log}" ?
 
 # Progress report (if run sequential)
 echo "Completed collecting alignment summary metrics: $(date +%d%b%Y_%H:%M:%S)"
 echo ""
-
-#########################################################################################################
-#fi
-#clean_bam="${sample}_${lane}_fixmate_sort_binfix_clean.bam"
-#clean_bam="${bam_folder}/${clean_bam}"
-#########################################################################################################
-
-#########################################################################################################
-if [ "a" == "b" ]
-then
-#########################################################################################################
 
 # ------- Collect hybridisation selection metrics ------- #
 
@@ -491,7 +484,7 @@ hs_metrics="${picard_hybridisation_folder}/${sample}_hs_metrics.txt"
 hs_coverage="${picard_hybridisation_folder}/${sample}_hs_coverage.txt"
 
 # Process sample (using b37 interval lists)
-java -Xmx8g -jar "${picard}" CalculateHsMetrics \
+java -Xmx"${java_xmx}" -jar "${picard}" CalculateHsMetrics \
   BAIT_SET_NAME="${bait_set_name}" \
   BAIT_INTERVALS="${probes_intervals}" \
   TARGET_INTERVALS="${targets_intervals}" \
@@ -500,18 +493,16 @@ java -Xmx8g -jar "${picard}" CalculateHsMetrics \
   OUTPUT="${hs_metrics}" \
   PER_TARGET_COVERAGE="${hs_coverage}" \
   VERBOSITY=ERROR \
-  QUIET=true
+  QUIET=true #2> "${CalculateHsMetrics.log}" ?
 
 # Progress report (if run sequential)
 echo "Completed collecting hybridisation selection metrics: $(date +%d%b%Y_%H:%M:%S)"
 echo ""
 
-# The 3 stats collectors above could be run in parallel.
-# If this was done si, then wait until all picard metrics are calculated and report progress
-# Make sure the tools do not ask for excessive memory (-Xmx4g is enough)
-#wait
-#echo "Completed collecting various picard metrics: $(date +%d%b%Y_%H:%M:%S)"
-#echo ""
+#########################################################################################################
+if [ "a" == "b" ]
+then
+#########################################################################################################
 
 # ------- Qualimap ------- #
 
@@ -526,7 +517,7 @@ then
     mkdir -p "${qualimap_sample_folder}"
     
     # Variable to reset default memory settings for qualimap
-    export JAVA_OPTS="-Xms1g -Xmx8g"
+    export JAVA_OPTS="-Xms1g -Xmx${java_xmx}"
     
     # Start qualimap
     qualimap_log="${qualimap_sample_folder}/${sample}.log"

@@ -2,7 +2,7 @@
 
 # s03_summarise_and_save.sh
 # Started: Alexey Larionov, Nov2016
-# Last updated: Alexey Larionov, 26Feb2017
+# Last updated: Alexey Larionov, 15Mar2017
 
 # Tasks:
 # - summarise and save results from samples alignment
@@ -52,7 +52,7 @@ echo "" >> "${pipeline_log}"
 # Prepare header for the fastqc summary file
 a_sample=$(awk 'NR==2 {print $1}' "${fastq_samples_file_in}")
 a_fastq_file=$(awk 'NR==2 {print $2}' "${fastq_samples_file_in}")
-a_fastqc_folder="${a_fastq_file%.fastq.gz}_fastqc"
+a_fastqc_folder="${a_fastq_file%.${fastq_suffix}}_fastqc"
 a_fastqc_summary_file="${raw_fastqc_folder}/${a_fastqc_folder}/summary.txt"
 fastqc_summary_fields=$(awk 'BEGIN { FS="\t" } ; {print $2}' "${a_fastqc_summary_file}")
 fastqc_summary_header=${fastqc_summary_fields// /_}
@@ -73,7 +73,7 @@ do
   fi
 
   # Read 1
-  fastqc_folder_1="${raw_fastqc_folder}/${fastq1%.fastq.gz}_fastqc"
+  fastqc_folder_1="${raw_fastqc_folder}/${fastq1%.${fastq_suffix}}_fastqc"
   fastqc_summary_file_1="${fastqc_folder_1}/summary.txt"
   fastqc_summary_data_1=$(awk '{print $1}' "${fastqc_summary_file_1}")
   fastqc_summary_data_1=${fastqc_summary_data_1//$'\n'/'\t'}
@@ -81,7 +81,7 @@ do
   echo -e "${fastqc_summary_data_1}" >> "${raw_fastqc_folder}/raw_fastqc_summary.txt"
 
   # Read 2
-  fastqc_folder_2="${raw_fastqc_folder}/${fastq2%.fastq.gz}_fastqc"
+  fastqc_folder_2="${raw_fastqc_folder}/${fastq2%.${fastq_suffix}}_fastqc"
   fastqc_summary_file_2="${fastqc_folder_2}/summary.txt"
   fastqc_summary_data_2=$(awk '{print $1}' "${fastqc_summary_file_2}")
   fastqc_summary_data_2=${fastqc_summary_data_2//$'\n'/'\t'}
@@ -100,12 +100,17 @@ Rscript "${scripts_folder}/p01_plot_fastqc.r" \
 echo "Completed summarising raw fastqc results: $(date +%d%b%Y_%H:%M:%S)" >> "${summarise_save_log}"
 echo "" >> "${summarise_save_log}"
 
+##################################################################################################
+#if [ "a" == "b" ]
+#then
+##################################################################################################
+
 # --------------------- Summarise trimmed fastqc ------------------- #
 
 # Prepare header for the fastqc summary file
 a_sample=$(awk 'NR==2 {print $1}' "${fastq_samples_file_in}")
 a_fastq_file=$(awk 'NR==2 {print $2}' "${fastq_samples_file_in}")
-a_fastqc_folder="${a_fastq_file%.fastq.gz}_fastqc"
+a_fastqc_folder="${a_fastq_file%.${fastq_suffix}}_trim_fastqc"
 a_fastqc_summary_file="${trimmed_fastqc_folder}/${a_fastqc_folder}/summary.txt"
 fastqc_summary_fields=$(awk 'BEGIN { FS="\t" } ; {print $2}' "${a_fastqc_summary_file}")
 fastqc_summary_header=${fastqc_summary_fields// /_}
@@ -117,6 +122,9 @@ echo -e "${fastqc_summary_header}" > "${trimmed_fastqc_folder}/trimmed_fastqc_su
 while read sample fastq1 fastq2 md5
 do
 
+  #trimmed_fastq_1="${trimmed_fastq_folder}/${fastq_1%.${fastq_suffix}}_trim.${fastq_suffix}"
+  #trimmed_fastq_2="${trimmed_fastq_folder}/${fastq_2%.${fastq_suffix}}_trim.${fastq_suffix}"
+
   # Skip the header line
   if [ "${sample}" == "sample" ]
   then
@@ -124,7 +132,7 @@ do
   fi
 
   # Read 1
-  fastqc_folder_1="${trimmed_fastqc_folder}/${fastq1%.fastq.gz}_fastqc"
+  fastqc_folder_1="${trimmed_fastqc_folder}/${fastq1%.${fastq_suffix}}_trim_fastqc"
   fastqc_summary_file_1="${fastqc_folder_1}/summary.txt"
   fastqc_summary_data_1=$(awk '{print $1}' "${fastqc_summary_file_1}")
   fastqc_summary_data_1=${fastqc_summary_data_1//$'\n'/'\t'}
@@ -132,7 +140,7 @@ do
   echo -e "${fastqc_summary_data_1}" >> "${trimmed_fastqc_folder}/trimmed_fastqc_summary.txt"
 
   # Read 2
-  fastqc_folder_2="${trimmed_fastqc_folder}/${fastq2%.fastq.gz}_fastqc"
+  fastqc_folder_2="${trimmed_fastqc_folder}/${fastq2%.${fastq_suffix}}_trim_fastqc"
   fastqc_summary_file_2="${fastqc_folder_2}/summary.txt"
   fastqc_summary_data_2=$(awk '{print $1}' "${fastqc_summary_file_2}")
   fastqc_summary_data_2=${fastqc_summary_data_2//$'\n'/'\t'}
@@ -154,6 +162,10 @@ echo "" >> "${summarise_save_log}"
 # Progress report to the main log
 echo "Completed summarising fastqc results: $(date +%d%b%Y_%H:%M:%S)" >> "${pipeline_log}"
 echo "" >> "${pipeline_log}"
+
+##################################################################################################
+#fi
+##################################################################################################
 
 # ------------------------ Progress report --------------------- #
 
@@ -182,23 +194,23 @@ ssh \
   -o "LogLevel=error" \
   -o "StrictHostKeyChecking=no" \
   -o "UserKnownHostsFile=/dev/null" \
-  "${nas}" "mkdir -p ${tgt_nas_folder}"
+  "${tgt_nas}" "mkdir -p ${tgt_nas_folder}"
 
 # Copy results
-rsync -ahe ssh "${project_folder}" "${nas}:${tgt_nas_folder}/"
+rsync -ahe ssh "${project_folder}" "${tgt_nas}:${tgt_nas_folder}/"
 
 # Logs-on-nas (to report progress after moving logs to nas) 
-main_log_on_nas="${tgt_nas_folder}/${project}/${library}/${lane}/logs/a00_pipeline_${project}_${library}_${lane}.log"
-script_log_on_nas="${tgt_nas_folder}/${project}/${library}/${lane}/logs/summarise_and_save.log"
+main_log_on_nas="${tgt_nas_folder}/${project}/${library}/${lane}/f01_logs/a00_pipeline_${project}_${library}_${lane}.log"
+script_log_on_nas="${tgt_nas_folder}/${project}/${library}/${lane}/f01_logs/summarise_and_save.log"
 
 # Progress report to logs-on-nas (written directly to nas by ssh)
-ssh -o "LogLevel=error" -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "${nas}" \
+ssh -o "LogLevel=error" -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "${tgt_nas}" \
   'echo -e "Completed saving results to nas: '"$(date +%d%b%Y_%H:%M:%S)\n"'" >> '"${main_log_on_nas}"
-ssh -o "LogLevel=error" -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "${nas}" \
+ssh -o "LogLevel=error" -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "${tgt_nas}" \
   'echo -e "Completed saving results to nas: '"$(date +%d%b%Y_%H:%M:%S)\n"'" >> '"${script_log_on_nas}"
 
 ####################################################################
-exit
+#exit
 ####################################################################
 
 # -------------------------------------------------------------- #
@@ -260,9 +272,9 @@ if [ "${efs_mount_tgt_exists}" == "yes" ]
 then
 
   # Error message to logs-on-nas (written directly to nas by ssh)
-  ssh -o "LogLevel=error" -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "${nas}" \
+  ssh -o "LogLevel=error" -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "${tgt_nas}" \
     'echo -e "efs mount target '"${mount_tgt_id}"' could not be deleted within 10 min\nScript terminated\n" >> '"${main_log_on_nas}"
-  ssh -o "LogLevel=error" -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "${nas}" \
+  ssh -o "LogLevel=error" -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "${tgt_nas}" \
     'echo -e "efs mount target '"${mount_tgt_id}"' could not be deleted within 10 min\nScript terminated\n" >> '"${script_log_on_nas}"
   
   # Error message by e-mail
@@ -283,10 +295,10 @@ aws efs delete-file-system \
   --region "${region}"
 
 # Progress report to logs-on-nas (written directly to nas by ssh)
-ssh -o "LogLevel=error" -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "${nas}" \
-  'echo -e "Deleted efs\n\nTerminating summarise-and-save ec2 instance\n" >> '"${main_log_on_nas}"
-ssh -o "LogLevel=error" -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "${nas}" \
-  'echo -e "Deleted efs\n\nTerminating summarise-and-save ec2 instance\n" >> '"${script_log_on_nas}"
+ssh -o "LogLevel=error" -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "${tgt_nas}" \
+  'echo -e "Deleted efs\n\nTerminating the head ec2 instance\n" >> '"${main_log_on_nas}"
+ssh -o "LogLevel=error" -o "StrictHostKeyChecking=no" -o "UserKnownHostsFile=/dev/null" "${tgt_nas}" \
+  'echo -e "Deleted efs\n\nTerminating the head ec2 instance\n" >> '"${script_log_on_nas}"
 
 # Progress report by e-mail
 echo -e \

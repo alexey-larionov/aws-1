@@ -2,7 +2,7 @@
 
 # s01_copy_and_dispatch.sh
 # Started: Alexey Larionov, 25Nov2016
-# Last updated: Alexey Larionov, 26Feb2016
+# Last updated: Alexey Larionov, 15Mar2017
 
 # Tasks:
 # - create efs
@@ -188,7 +188,7 @@ echo "" >> "${pipeline_log}"
 
 # Copy samples list
 samples_file_in="$(basename ${fastq_samples_file_in})"
-rsync -ahe ssh "${nas}:${src_nas_folder}/${samples_file_in}" "${raw_fastq_folder}/" &>> "${pipeline_log}"
+rsync -ahe ssh "${src_nas}:${src_nas_folder}/${samples_file_in}" "${raw_fastq_folder}/" &>> "${pipeline_log}"
 
 # For each sample in the samples list
 while read sample fastq1 fastq2 md5
@@ -201,13 +201,13 @@ do
   fi
   
   # Copy fastq1
-  rsync -ahe ssh "${nas}:${src_nas_folder}/${fastq1}" "${raw_fastq_folder}/" &>> "${pipeline_log}"
+  rsync -ahe ssh "${src_nas}:${src_nas_folder}/${fastq1}" "${raw_fastq_folder}/" &>> "${pipeline_log}"
 
   # Copy fastq2
-  rsync -ahe ssh "${nas}:${src_nas_folder}/${fastq2}" "${raw_fastq_folder}/" &>> "${pipeline_log}"
+  rsync -ahe ssh "${src_nas}:${src_nas_folder}/${fastq2}" "${raw_fastq_folder}/" &>> "${pipeline_log}"
 
   # Copy md5
-  rsync -ahe ssh "${nas}:${src_nas_folder}/${md5}" "${raw_fastq_folder}/" &>> "${pipeline_log}"
+  rsync -ahe ssh "${src_nas}:${src_nas_folder}/${md5}" "${raw_fastq_folder}/" &>> "${pipeline_log}"
 
   # Progress report
   echo "  copied sample ${sample}: $(date +%d%b%Y_%H:%M:%S)" >> "${pipeline_log}"

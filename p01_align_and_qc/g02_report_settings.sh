@@ -3,7 +3,7 @@
 # g02_report_settings.sh
 # Report settings for wes lane alignment pipeline
 # Started: Alexey Larionov, 23Aug2016
-# Last updated: Alexey Larionov, 25Feb2017
+# Last updated: Alexey Larionov, 15Mar2017
 
 # Stop at errors
 set -e
@@ -39,8 +39,10 @@ echo "remove_trimmed_fastq: ${remove_trimmed_fastq}"
 echo ""
 echo "---------------- nas files and folders ----------------"
 echo ""
-echo "nas: ${nas}"
+echo "src_nas: ${src_nas}"
 echo "src_nas_folder: ${src_nas_folder}"
+echo ""
+echo "tgt_nas: ${tgt_nas}"
 echo "tgt_nas_folder: ${tgt_nas_folder}"
 echo ""
 echo "-------------------- aws settings ---------------------"
@@ -58,6 +60,10 @@ echo ""
 echo "ami_id: ${ami_id}"
 echo ""
 echo "align_qc_instance_type: ${align_qc_instance_type}"
+echo ""
+echo "threads_bwa: ${threads_bwa}"
+echo ""
+echo "java_xmx: ${java_xmx}"
 echo ""
 echo "efs_token: ${efs_token}"
 echo ""
@@ -103,11 +109,9 @@ echo "-------------- Tools and resources ----------------"
 echo ""
 java -version
 echo ""
-python --version
-echo ""
 "${fastqc}" --version
 echo ""
-echo "cutadapt version "$(cutadapt --version)
+echo "cutadapt version: " $("${cutadapt}" --version)
 echo "cutadapt_min_len: ${cutadapt_min_len}"
 echo "cutadapt_trim_qual: ${cutadapt_trim_qual}"
 echo "cutadapt_remove_adapters: ${cutadapt_remove_adapters}"
@@ -147,16 +151,25 @@ echo "LiberationSansRegularTTF: ${LiberationSansRegularTTF}"
 echo ""
 echo "samstat: ${samstat}"
 echo ""
+
+#####################################################
+fi
+#####################################################
+
 echo "Resources" 
 echo "---------"
 echo ""
 echo "resources_folder: ${resources_folder}"
 echo ""
-echo "ref_genome: ${ref_genome}"
-echo ""
 echo "bait_set_name: ${bait_set_name}"
 echo "probes_intervals: ${probes_intervals}"
 echo "targets_intervals: ${targets_intervals}"
+
+#####################################################
+if [ "a" == "b" ] 
+then
+#####################################################
+
 echo "targets_bed_3: ${targets_bed_3}"
 echo "targets_bed_6: ${targets_bed_6}"
 echo ""

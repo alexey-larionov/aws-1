@@ -1,6 +1,6 @@
 Job description for alignment and qc, aws wes pipeline
 Started: Alexey Larionov, 19Dec2016
-Last updated: Alexey Larionov, 26Feb2017
+Last updated: Alexey Larionov, 15Mar2017
 
 # ----------------------------------------------------------------- #
 #                         Info to log file                          #
@@ -28,15 +28,10 @@ lane: lane1
 samples: samples_1.txt # the file MUST exist in source fastq folder 
 
 fastq_suffix: fastq.gz
+# needed for renaming files after trimming
 
 data_type: pe
 # allowed values: pe (se is not yet supported)
-
-platform: ILLUMINA
-# other platforms are not expected 
-
-platform_unit_for_rg: from_illumina_fastq
-# allowed values: from_illumina_fastq or project_library_lane
 
 remove_raw_fastq: no
 # allowed values: yes, no
@@ -44,12 +39,20 @@ remove_raw_fastq: no
 remove_trimmed_fastq: no
 # allowed values: yes, no
 
+platform: ILLUMINA
+# other platforms are not expected 
+
+platform_unit_for_rg: from_illumina_fastq
+# allowed values: from_illumina_fastq or project_library_lane
+
 # ----------------------------------------------------------------- #
 #                        nas files and folders                      #
 # ----------------------------------------------------------------- #
 
-nas: admin@mgqnap2.medschl.cam.ac.uk
+src_nas: admin@mgqnap2.medschl.cam.ac.uk
 src_nas_folder: /share/alexey/aws/source_data/160630_alarionov
+
+tgt_nas: admin@mgqnap2.medschl.cam.ac.uk
 tgt_nas_folder: /share/alexey/aws
 
 # ----------------------------------------------------------------- #
@@ -73,7 +76,7 @@ ec2_security_group_id: sg-2ef16548
 
 # Key(s)
 # Currently it is fixed
-# In future personal keys support and keys rotation may be added
+# In future personal keys support and keys rotation should be added
 key_name: k01_01Dec2016
 key_file: /home/ec2-user/.ssh/k01_01Dec2016.pem
 
@@ -82,10 +85,18 @@ ami_id: to-be-fixed-later
 # Currently updated automatically to the AMI that has been launched
 # In future will be fixed to a stable working image
 
-# Instance(s) type
+# Alignment instance(s) type
 align_qc_instance_type: m4.xlarge 
-# To be changed to appropriate image later
-# Possible instances: t2.micro m4.xlarge 
+# Recommended instance type(s): 
+# m4.xlarge - 4 vCPUs, 16GB RAM, "High" network speed
+
+# Number of threads for BWA
+threads_bwa: 4
+# Check the number of vCPUs in the alignment instance(s) type
+
+# Max memory allocated for java in Picard/GATK calls
+java_xmx: 12g
+# Check the RAM in the alignment instance(s) type
 
 # ----------------------------------------------------------------- #
 #                          Files and folders                        #
@@ -128,14 +139,18 @@ samstat_results_folder: f04_bam_stats/f04_samstat
 #                         Tools and resources                       #
 # ----------------------------------------------------------------- #
 
+Tools
+-----
+
 #java: java
-#cutadapt: cutadapt
 #R: R
 #R-folder: /usr/bin
 
 tools_folder: tools
+
 fastqc: fastqc/fastqc_v0.11.5/fastqc
 
+cutadapt: python/python_2.7.13/bin/cutadapt
 cutadapt_min_len: 50
 cutadapt_trim_qual: 20
 cutadapt_remove_adapters: no # allowed values: yes, no
@@ -156,3 +171,25 @@ samtools_folder: samtools/samtools-1.3.1/bin
 
 picard: picard/picard-2.9.0/picard.jar
 htsjdk: htsjdk/htsjdk-2.9.1/htsjdk-unspecified-SNAPSHOT-all.jar
+
+#qualimap: qualimap/qualimap_v2.1.1/qualimap.modified
+
+#gnuplot: gnuplot/gnuplot-5.0.1/bin/gnuplot
+#LiberationSansRegularTTF: fonts/liberation-fonts-ttf-2.00.1/LiberationSans-Regular.ttf
+
+#gatk : DepthOfCoverage, DiagnoseTargets, QualifyMissingIntervals
+
+#samstat: samstat/samstat-1.5.1/bin/samstat
+
+Resources
+---------
+
+resources_folder: /home/ec2-user/resources
+
+bait_set_name: nexterarapidcapture_exome
+probes_intervals: nexterarapidcapture_exome/b38/nexterarapidcapture_exome_probes_hg38.interval_list
+targets_intervals: nexterarapidcapture_exome/b38/nexterarapidcapture_exome_targets_hg38.interval_list
+
+#targets_bed_3: illumina_nextera/nexterarapidcapture_exome_targetedregions_v1.2.b37.bed
+#targets_bed_6: illumina_nextera/nexterarapidcapture_exome_targetedregions_v1.2.b37.6.bed
+#bed_6 is for Qualimap feature-file, which does not look working anyway ...

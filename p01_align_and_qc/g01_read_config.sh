@@ -3,7 +3,7 @@
 # g01_read_config.sh
 # Parse job config file for aws wes pipeline
 # Started: Alexey Larionov, 19Dec2016
-# Last updated: Alexey Larionov, 26Feb2016
+# Last updated: Alexey Larionov, 15Mar2017
 
 # Use: g01_read_config.sh job.txt
 
@@ -42,8 +42,10 @@ remove_trimmed_fastq=$(awk '$1=="remove_trimmed_fastq:" {print $2}' "${job_file}
 #                       nas files and folders                       #
 # ----------------------------------------------------------------- #
 
-nas=$(awk '$1=="nas:" {print $2}' "${job_file}") # e.g. admin@mgqnap2.medschl.cam.ac.uk
+src_nas=$(awk '$1=="src_nas:" {print $2}' "${job_file}") # e.g. admin@mgqnap2.medschl.cam.ac.uk
 src_nas_folder=$(awk '$1=="src_nas_folder:" {print $2}' "${job_file}") # e.g. /share/user/project/source_fastq
+
+tgt_nas=$(awk '$1=="tgt_nas:" {print $2}' "${job_file}") # e.g. admin@mgqnap2.medschl.cam.ac.uk
 tgt_nas_folder=$(awk '$1=="tgt_nas_folder:" {print $2}' "${job_file}") # e.g. /share/user
 
 # ----------------------------------------------------------------- #
@@ -68,6 +70,12 @@ ami_id=$(awk '$1=="ami_id:" {print $2}' "${job_file}") # e.g. ami-7d3d1b0e
 
 # Instance(s) type
 align_qc_instance_type=$(awk '$1=="align_qc_instance_type:" {print $2}' "${job_file}") # e.g. m4.4xlarge
+
+# Number of threads for BWA
+threads_bwa=$(awk '$1=="threads_bwa:" {print $2}' "${job_file}") # e.g. 4
+
+# Max memory allocated for java in Picard/GATK calls
+java_xmx=$(awk '$1=="java_xmx:" {print $2}' "${job_file}") # e.g. 12g
 
 # token for efs creation
 efs_token=$(awk '$1=="efs_token:" {print $2}' "${job_file}") # e.g. wes_efs
@@ -164,8 +172,8 @@ samstat_results_folder="${lane_folder}/${samstat_results_folder}"
 # ----------- Tools ---------- #
 
 #java
-#python
-#cutadapt
+#R
+#python-?
 
 # Tools folder 
 tools_folder=$(awk '$1=="tools_folder:" {print $2}' "${job_file}") # e.g. tools
@@ -176,6 +184,10 @@ fastqc=$(awk '$1=="fastqc:" {print $2}' "${job_file}") # e.g. fastqc/fastqc_v0.1
 fastqc="${tools_folder}/${fastqc}"
 
 # Cutadapt settings
+
+cutadapt=$(awk '$1=="cutadapt:" {print $2}' "${job_file}") # e.g.python/python_2.7.13/bin/cutadapt
+cutadapt="${tools_folder}/${cutadapt}"
+
 cutadapt_min_len=$(awk '$1=="cutadapt_min_len:" {print $2}' "${job_file}") # e.g. 50
 cutadapt_trim_qual=$(awk '$1=="cutadapt_trim_qual:" {print $2}' "${job_file}") # e.g. 20
 cutadapt_remove_adapters=$(awk '$1=="cutadapt_remove_adapters:" {print $2}' "${job_file}") # yes or no
@@ -234,22 +246,26 @@ LiberationSansRegularTTF="${tools_folder}/${LiberationSansRegularTTF}"
 samstat=$(get_parameter "samstat") # e.g. samstat/samstat-1.5.1/bin/samstat
 samstat="${tools_folder}/${samstat}"
 
+##################################################################################################
+fi
+##################################################################################################
+
 # ----------- Resources ---------- #
 
-resources_folder=$(get_parameter "resources_folder") # e.g. /scratch/medgen/resources
+resources_folder=$(awk '$1=="resources_folder:" {print $2}' "${job_file}") # e.g. /scratch/medgen/resources
 
-ref_genome=$(get_parameter "ref_genome") # e.g. gatk_bundle/b37/decompressed/human_g1k_v37.fasta
-ref_genome="${resources_folder}/${ref_genome}"
+bait_set_name=$(awk '$1=="bait_set_name:" {print $2}' "${job_file}") # e.g. nexterarapidcapture_exome
 
-bait_set_name=$(get_parameter "bait_set_name") # e.g. Nexera_Rapid_Capture_Exome
-
-probes_intervals=$(get_parameter "probes_intervals") 
-# e.g. illumina_nextera/nexterarapidcapture_exome_probes_v1.2.b37.intervals
+probes_intervals=$(awk '$1=="probes_intervals:" {print $2}' "${job_file}") # e.g. nexterarapidcapture_exome/b38/nexterarapidcapture_exome_probes_hg38.interval_list
 probes_intervals="${resources_folder}/${probes_intervals}"
 
-targets_intervals=$(get_parameter "targets_intervals") 
-# e.g. illumina_nextera/nexterarapidcapture_exome_targetedregions_v1.2.b37.intervals
+targets_intervals=$(awk '$1=="targets_intervals:" {print $2}' "${job_file}") # e.g. nexterarapidcapture_exome/b38/nexterarapidcapture_exome_targets_hg38.interval_list
 targets_intervals="${resources_folder}/${targets_intervals}"
+
+##################################################################################################
+if [ "a" == "b" ]
+then
+##################################################################################################
 
 targets_bed_3=$(get_parameter "targets_bed_3") 
 # e.g. illumina_nextera/nexterarapidcapture_exome_targetedregions_v1.2.b37.bed
